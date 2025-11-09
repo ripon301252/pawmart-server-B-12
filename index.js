@@ -31,6 +31,10 @@ async function run() {
     const db = client.db("pawmart_db");
     const storesCollection = db.collection("stores");
     const categoriesCollection = db.collection("categories");
+    const petsCollection = db.collection("pets");
+    const petFoodCollection = db.collection("petfood");
+    const accessoriesCollection = db.collection("accessories");
+    const petCareProductsCollection =db.collection("petCareProducts");
 
     app.get("/stores", async (req, res) => {
       const cursor = storesCollection.find();
@@ -60,6 +64,28 @@ async function run() {
       const result = await cursor.toArray();
       res.send(result);
     });
+
+    app.get('/pets', async(req, res)=>{
+      const cursor = petsCollection.find();
+      const result = await cursor.toArray();
+      res.send(result)
+    })
+
+    app.get('/petFood', async(req, res)=>{
+      const cursor = petFoodCollection.find();
+      const result = await cursor.toArray();
+      res.send(result)
+    })
+    app.get('/accessories', async(req, res)=>{
+      const cursor = accessoriesCollection.find();
+      const result = await cursor.toArray();
+      res.send(result)
+    })
+    app.get('/petProduct', async(req, res)=>{
+      const cursor = petCareProductsCollection.find();
+      const result = await cursor.toArray();
+      res.send(result)
+    })
 
     // ping
     await client.db("admin").command({ ping: 1 });
