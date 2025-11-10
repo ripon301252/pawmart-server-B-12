@@ -26,7 +26,7 @@ const client = new MongoClient(uri, {
 
 async function run() {
   try {
-    await client.connect();
+    // await client.connect();
 
     const db = client.db("pawmart_db");
     const storesCollection = db.collection("stores");
@@ -49,10 +49,10 @@ async function run() {
     });
 
     app.get("/categories", async (req, res) => {
-      
+
       const count = await categoriesCollection.countDocuments();
       if (count === 0) {
-        // collection খালি হলে auto insert
+        
         await categoriesCollection.insertMany([
           { name: "Pets", icon: "🐶", slug: "pets" },
           { name: "Pet Food", icon: "🍖", slug: "pet-food" },
@@ -61,7 +61,7 @@ async function run() {
         ]);
       }
 
-      const cursor = categoriesCollection.find(); // খালি filter মানে সব নেবে
+      const cursor = categoriesCollection.find(); 
       const result = await cursor.toArray();
       res.send(result);
     });
@@ -88,8 +88,9 @@ async function run() {
       res.send(result)
     })
 
+
     // ping
-    await client.db("admin").command({ ping: 1 });
+    // await client.db("admin").command({ ping: 1 });
     console.log(
       "Pinged your deployment. You successfully connected to MongoDB!"
     );
