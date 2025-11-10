@@ -10,7 +10,7 @@ const port = process.env.PORT || 5000;
 app.use(cors());
 app.use(express.json());
 
-// Root route
+// Root
 app.get("/", (req, res) => {
   res.send("PawMart server is running 🐾");
 });
@@ -19,159 +19,107 @@ app.get("/", (req, res) => {
 const uri =
   "mongodb+srv://pawmart_db:poMamDZGktoiyFBp@cluster0.w0nmtjl.mongodb.net/?appName=Cluster0";
 
-// Mongo client setup
 const client = new MongoClient(uri, {
-  serverApi: {
-    version: ServerApiVersion.v1,
-    strict: true,
-    deprecationErrors: true,
-  },
+  serverApi: { version: ServerApiVersion.v1, strict: true, deprecationErrors: true },
 });
 
-// Main async function
 async function run() {
   try {
     await client.connect();
     const db = client.db("pawmart_db");
 
-    // Collections
     const storesCollection = db.collection("stores");
-    const categoriesCollection = db.collection("categories");
-    const petsCollection = db.collection("pets");
-    const petFoodCollection = db.collection("petfood");
-    const accessoriesCollection = db.collection("accessories");
-    const petCareProductsCollection = db.collection("petCareProducts");
     const ordersCollection = db.collection("orders");
-    const listingsCollection = db.collection("listings");
 
-    // Category slug map
-    const collections = {
-      pets: petsCollection,
-      petFood: petFoodCollection,
-      accessories: accessoriesCollection,
-      petCareProducts: petCareProductsCollection,
-    };
-
-    const categorySlugMap = {
-      pets: "pets",
-      "pet food": "petFood",
-      accessories: "accessories",
-      "pet care products": "petCareProducts",
-    };
+    // =========================
+    // Stores Routes
+    // =========================
 
     // Get all stores
     app.get("/stores", async (req, res) => {
-      const result = await storesCollection.find().toArray();
-      res.send(result);
-    });
-
-    // Get all categories (insert default if empty)
-    app.get("/categories", async (req, res) => {
-      const count = await categoriesCollection.countDocuments();
-      if (count === 0) {
-        await categoriesCollection.insertMany([
-          { name: "Pets", icon: "🐶", slug: "pets" },
-          { name: "Pet Food", icon: "🍖", slug: "petFood" },
-          { name: "Accessories", icon: "🧸", slug: "accessories" },
-          { name: "Pet Care Products", icon: "💊", slug: "petCareProducts" },
-        ]);
-      }
-      const result = await categoriesCollection.find().toArray();
-      res.send(result);
-    });
-
-    // Get all items per category
-    app.get("/pets", async (req, res) => {
-      const result = await petsCollection.find().toArray();
-      res.send(result);
-    });
-    app.get("/petFood", async (req, res) => {
-      const result = await petFoodCollection.find().toArray();
-      res.send(result);
-    });
-    app.get("/accessories", async (req, res) => {
-      const result = await accessoriesCollection.find().toArray();
-      res.send(result);
-    });
-    app.get("/petCareProducts", async (req, res) => {
-      const result = await petCareProductsCollection.find().toArray();
-      res.send(result);
-    });
-
-    // Get single item details
-    app.get("/:category/:id", async (req, res) => {
-      const { category, id } = req.params;
-
-      // Normalize category
-      const normalizedCategory = categorySlugMap[category.toLowerCase()];
-      const collection = collections[normalizedCategory];
-
-      if (!collection) {
-        return res.status(404).send({ error: "Category not found" });
-      }
-
       try {
-        const result = await collection.findOne({ _id: new ObjectId(id) });
-        if (!result) return res.status(404).send({ error: "Item not found" });
-        res.send(result);
+        const result = await storesCollection.find().toArray();
+        res.json(result);
       } catch (err) {
         console.error(err);
-        res.status(500).send({ error: "Failed to fetch item" });
+        res.status(500).send("Server error");
       }
     });
 
-    // Add new order
+    // Get stores list with optional category filter (max 6 items)
+    app.get("/stores-list", async (req, res) => {
+      try {
+        const { category } = req.query;
+        const query = category ? { category } : {};
+        const stores = await storesCollection.find(query).limit(6).toArray();
+        res.json(stores);
+      } catch (err) {
+        console.error(err);
+        res.status(500).send("Server error");
+      }
+    });
+
+    // Get single store by ID
+    app.get("/stores/:id", async (req, res) => {
+      const { id } = req.params;
+      try {
+        const store = await storesCollection.findOne({ _id: new ObjectId(id) });
+        if (!store) return res.status(404).send("Store not found");
+        res.json(store);
+      } catch (err) {
+        console.error(err);
+        res.status(500).send("Server error");
+      }
+    });
+
+    // Add new listing
+    app.post("/stores", async (req, res) => {
+      try {
+        const newListing = req.body;
+        const result = await storesCollection.insertOne(newListing);
+        res.status(201).json({ message: "Listing added", listingId: result.insertedId });
+      } catch (err) {
+        console.error(err);
+        res.status(500).send("Server error");
+      }
+    });
+
+    // =========================
+    // Orders Routes
+    // =========================
+
+    // Get all orders or by user email
+    app.get("/myOrders", async (req, res) => {
+      try {
+        const email = req.query.email;
+        const query = email ? { email } : {};
+        const orders = await ordersCollection.find(query).toArray();
+        res.json(orders);
+      } catch (err) {
+        console.error(err);
+        res.status(500).send("Server error");
+      }
+    });
+
+    // Create new order
     app.post("/orders", async (req, res) => {
       try {
         const order = req.body;
         const result = await ordersCollection.insertOne(order);
-        res.send(result);
-      } catch (error) {
-        console.error("Error inserting order:", error);
-        res.status(500).send({ message: "Failed to place order" });
-      }
-    });
-
-    // Get all orders
-    app.get("/orders", async (req, res) => {
-      const result = await ordersCollection.find().toArray();
-      res.send(result);
-    });
-
-    // Add new listing
-    app.post("/listings", async (req, res) => {
-      try {
-        const listing = req.body;
-        const result = await listingsCollection.insertOne(listing);
-        res.send({ success: true, insertedId: result.insertedId });
+        res.status(201).json({ message: "Order placed", orderId: result.insertedId });
       } catch (err) {
         console.error(err);
-        res
-          .status(500)
-          .send({ success: false, message: "Failed to add listing!" });
+        res.status(500).send("Server error");
       }
     });
 
-    // Get listings (optional: filter by email)
-    app.get("/listings", async (req, res) => {
-      const email = req.query.email;
-      try {
-        const query = email ? { email } : {};
-        const listings = await listingsCollection.find(query).toArray();
-        res.send(listings);
-      } catch (err) {
-        console.error(err);
-        res.status(500).send({ error: "Failed to fetch listings" });
-      }
-    });
-
+    // =========================
     // Ping MongoDB
+    // =========================
     await client.db("admin").command({ ping: 1 });
-    console.log(
-      "✅ Pinged your deployment. You successfully connected to MongoDB!"
-    );
+    console.log("✅ Connected to MongoDB!");
   } finally {
-    // Don't close client for server apps
+    // Don't close client
   }
 }
 
@@ -179,6 +127,4 @@ async function run() {
 run().catch(console.dir);
 
 // Listen
-app.listen(port, () => {
-  console.log(`🚀 PawMart server listening on port: ${port}`);
-});
+app.listen(port, () => console.log(`🚀 Server running on port: ${port}`));
