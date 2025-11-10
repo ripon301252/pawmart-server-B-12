@@ -49,6 +49,7 @@ async function run() {
     });
 
     app.get("/categories", async (req, res) => {
+      
       const count = await categoriesCollection.countDocuments();
       if (count === 0) {
         // collection খালি হলে auto insert
