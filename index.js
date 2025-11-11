@@ -20,14 +20,17 @@ const uri =
   "mongodb+srv://pawmart_db:poMamDZGktoiyFBp@cluster0.w0nmtjl.mongodb.net/?appName=Cluster0";
 
 const client = new MongoClient(uri, {
-  serverApi: { version: ServerApiVersion.v1, strict: true, deprecationErrors: true },
+  serverApi: {
+    version: ServerApiVersion.v1,
+    strict: true,
+    deprecationErrors: true,
+  },
 });
 
 async function run() {
   try {
     await client.connect();
     const db = client.db("pawmart_db");
-
     const storesCollection = db.collection("stores");
     const ordersCollection = db.collection("orders");
 
@@ -64,7 +67,9 @@ async function run() {
       const { id } = req.params;
       try {
         const store = await storesCollection.findOne({ _id: new ObjectId(id) });
-        if (!store) return res.status(404).send("Store not found");
+        if (!store) {
+          return res.status(404).send("Store not found");
+        }
         res.json(store);
       } catch (err) {
         console.error(err);
@@ -77,7 +82,9 @@ async function run() {
       try {
         const newListing = req.body;
         const result = await storesCollection.insertOne(newListing);
-        res.status(201).json({ message: "Listing added", listingId: result.insertedId });
+        res
+          .status(201)
+          .json({ message: "Listing added", listingId: result.insertedId });
       } catch (err) {
         console.error(err);
         res.status(500).send("Server error");
@@ -106,7 +113,63 @@ async function run() {
       try {
         const order = req.body;
         const result = await ordersCollection.insertOne(order);
-        res.status(201).json({ message: "Order placed", orderId: result.insertedId });
+        res
+          .status(201)
+          .json({ message: "Order placed", orderId: result.insertedId });
+      } catch (err) {
+        console.error(err);
+        res.status(500).send("Server error");
+      }
+    });
+
+    app.put("/stores/:id", async (req, res) => {
+      const { id } = req.params;
+      const updatedData = req.body; // যেটা frontend থেকে পাঠানো হবে
+      try {
+        const result = await storesCollection.updateOne(
+          { _id: new ObjectId(id) },
+          { $set: updatedData }
+        );
+        if (result.matchedCount === 0)
+          return res.status(404).send("Listing not found");
+        res.json({ message: "Listing updated successfully" });
+      } catch (err) {
+        console.error(err);
+        res.status(500).send("Server error");
+      }
+    });
+
+    // Update a listing by ID
+    app.patch("/stores/:id", async (req, res) => {
+      const { id } = req.params;
+      const updatedData = req.body;
+
+      try {
+        const result = await storesCollection.updateOne(
+          { _id: new ObjectId(id) },
+          { $set: updatedData }
+        );
+
+        if (result.matchedCount === 0) {
+          return res.status(404).json({ message: "Listing not found" });
+        }
+
+        res.json({ message: "Listing updated successfully" });
+      } catch (err) {
+        console.error(err);
+        res.status(500).json({ message: "Server error" });
+      }
+    });
+
+    app.delete("/stores/:id", async (req, res) => {
+      const { id } = req.params;
+      try {
+        const result = await storesCollection.deleteOne({
+          _id: new ObjectId(id),
+        });
+        if (result.deletedCount === 0)
+          return res.status(404).send("Listing not found");
+        res.json({ message: "Listing deleted successfully" });
       } catch (err) {
         console.error(err);
         res.status(500).send("Server error");
