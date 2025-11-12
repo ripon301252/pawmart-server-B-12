@@ -33,7 +33,6 @@ async function run() {
     const db = client.db("pawmart_db");
     const storesCollection = db.collection("stores");
     const ordersCollection = db.collection("orders");
-    
 
     // =========================
     // Stores Routes
@@ -92,6 +91,28 @@ async function run() {
       }
     });
 
+    // Update a listing by ID
+    app.patch("/stores/:id", async (req, res) => {
+      const { id } = req.params;
+      const updatedData = req.body;
+
+      try {
+        const result = await storesCollection.updateOne(
+          { _id: new ObjectId(id) },
+          { $set: updatedData }
+        );
+
+        if (result.matchedCount === 0) {
+          return res.status(404).json({ message: "Listing not found" });
+        }
+
+        res.json({ message: "Listing updated successfully" });
+      } catch (err) {
+        console.error(err);
+        res.status(500).json({ message: "Server error" });
+      }
+    });
+
     app.delete("/stores/:id", async (req, res) => {
       const { id } = req.params;
       try {
@@ -138,47 +159,20 @@ async function run() {
       }
     });
 
- 
-
-    // Update a listing by ID
-    app.patch("/stores/:id", async (req, res) => {
-      const { id } = req.params;
-      const updatedData = req.body;
-
-      try {
-        const result = await storesCollection.updateOne(
-          { _id: new ObjectId(id) },
-          { $set: updatedData }
-        );
-
-        if (result.matchedCount === 0) {
-          return res.status(404).json({ message: "Listing not found" });
-        }
-
-        res.json({ message: "Listing updated successfully" });
-      } catch (err) {
-        console.error(err);
-        res.status(500).json({ message: "Server error" });
-      }
-    });
-
-    
-
-    app.delete("/stores/:id", async (req, res) => {
-      const { id } = req.params;
-      try {
-        const result = await ordersCollection.deleteOne({
-          _id: new ObjectId(id),
-        });
-        if (result.deletedCount === 0)
-          return res.status(404).send("Listing not found");
-        res.json({ message: "Listing deleted successfully" });
-      } catch (err) {
-        console.error(err);
-        res.status(500).send("Server error");
-      }
-    });
-
+    // app.delete("/stores/:id", async (req, res) => {
+    //   const { id } = req.params;
+    //   try {
+    //     const result = await ordersCollection.deleteOne({
+    //       _id: new ObjectId(id),
+    //     });
+    //     if (result.deletedCount === 0)
+    //       return res.status(404).send("Listing not found");
+    //     res.json({ message: "Listing deleted successfully" });
+    //   } catch (err) {
+    //     console.error(err);
+    //     res.status(500).send("Server error");
+    //   }
+    // });
 
     app.delete("/myOrders/:id", async (req, res) => {
       const { id } = req.params;
@@ -199,7 +193,7 @@ async function run() {
     // Ping MongoDB
     // =========================
     await client.db("admin").command({ ping: 1 });
-    console.log("✅ Connected to MongoDB!");
+    console.log(" Connected to MongoDB!");
   } finally {
     // Don't close client
   }
