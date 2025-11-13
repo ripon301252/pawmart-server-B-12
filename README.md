@@ -2,7 +2,7 @@
 # 📍 Project Name: PawMart Server
 
 ## 🌐 Live Server Link:
-### 👉 https://pawmart-server.vercel.app
+### 👉 https://pawmart-server-seven.vercel.app/
 
 # 🔹 5 Key Features:
 
