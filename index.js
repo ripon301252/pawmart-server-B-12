@@ -2,7 +2,6 @@ require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
 const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
-
 const app = express();
 const port = process.env.PORT || 5000;
 
@@ -16,8 +15,7 @@ app.get("/", (req, res) => {
 });
 
 // MongoDB URI
-const uri =
-  "mongodb+srv://pawmart_db:poMamDZGktoiyFBp@cluster0.w0nmtjl.mongodb.net/?appName=Cluster0";
+const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.w0nmtjl.mongodb.net/?appName=Cluster0`;
 
 const client = new MongoClient(uri, {
   serverApi: {
@@ -29,7 +27,8 @@ const client = new MongoClient(uri, {
 
 async function run() {
   try {
-    await client.connect();
+    // await client.connect();
+
     const db = client.db("pawmart_db");
     const storesCollection = db.collection("stores");
     const ordersCollection = db.collection("orders");
@@ -49,12 +48,12 @@ async function run() {
       }
     });
 
-    // Get stores list with optional category filter (max 6 items)
+    // Get stores list with optional category filter (max 8 items)
     app.get("/stores-list", async (req, res) => {
       try {
         const { category } = req.query;
         const query = category ? { category } : {};
-        const stores = await storesCollection.find(query).limit(6).toArray();
+        const stores = await storesCollection.find(query).limit(8).toArray();
         res.json(stores);
       } catch (err) {
         console.error(err);
@@ -159,21 +158,6 @@ async function run() {
       }
     });
 
-    // app.delete("/stores/:id", async (req, res) => {
-    //   const { id } = req.params;
-    //   try {
-    //     const result = await ordersCollection.deleteOne({
-    //       _id: new ObjectId(id),
-    //     });
-    //     if (result.deletedCount === 0)
-    //       return res.status(404).send("Listing not found");
-    //     res.json({ message: "Listing deleted successfully" });
-    //   } catch (err) {
-    //     console.error(err);
-    //     res.status(500).send("Server error");
-    //   }
-    // });
-
     app.delete("/myOrders/:id", async (req, res) => {
       const { id } = req.params;
       try {
@@ -192,7 +176,7 @@ async function run() {
     // =========================
     // Ping MongoDB
     // =========================
-    await client.db("admin").command({ ping: 1 });
+    // await client.db("admin").command({ ping: 1 });
     console.log(" Connected to MongoDB!");
   } finally {
     // Don't close client
